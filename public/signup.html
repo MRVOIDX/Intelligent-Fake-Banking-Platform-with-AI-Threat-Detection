@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create your MANS Bank account - Join modern digital banking">
+    <title>Create Account - MANS Bank</title>
+    <link rel="icon" type="image/png" href="/assets/logo-mans-www_1763935432670.png">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            padding: 2rem;
+        }
+
+        .auth-box {
+            background: var(--white);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1rem;
+        }
+
+        .auth-logo h1 {
+            font-size: 1.8rem;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-logo p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            padding: 0.9rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+        }
+
+        .auth-submit {
+            padding: 1rem;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 0.5rem;
+        }
+
+        .auth-submit:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
+        }
+
+        .auth-submit:active {
+            transform: translateY(0);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .auth-footer p {
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .auth-footer a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .auth-footer a:hover {
+            color: var(--dark-blue);
+            text-decoration: underline;
+        }
+
+        .back-home {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .back-home a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .back-home a:hover {
+            opacity: 0.8;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 768px) {
+            .auth-box {
+                padding: 2rem 1.5rem;
+            }
+
+            .auth-logo h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS Bank Logo" data-testid="logo-auth">
+                <h1 data-testid="text-auth-title">Create Account</h1>
+                <p data-testid="text-auth-subtitle">Join thousands banking smarter with MANS</p>
+            </div>
+
+            <div id="errorMessage" class="error-message" data-testid="text-error-message"></div>
+
+            <form class="auth-form" id="signupForm" data-testid="form-signup">
+                <div class="form-group">
+                    <label for="name" data-testid="label-name">Full Name</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        placeholder="John Doe" 
+                        required
+                        data-testid="input-name"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email" data-testid="label-email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="you@example.com" 
+                        required
+                        data-testid="input-email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password" data-testid="label-password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="••••••••" 
+                        required
+                        minlength="6"
+                        data-testid="input-password"
+                    >
+                </div>
+
+                <button type="submit" class="auth-submit" data-testid="button-signup">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p data-testid="text-have-account">Already have an account?</p>
+                <a href="/login.html" data-testid="link-login">Sign In</a>
+            </div>
+        </div>
+
+        <div class="back-home">
+            <a href="/index.html" data-testid="link-home">
+                ← Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MANS Bank - Modern digital banking with blue elegance and seamless transactions">
+    <meta property="og:title" content="MANS Bank - Modern Banking Reimagined">
+    <meta property="og:description" content="Experience the future of banking with MANS Bank">
+    <meta property="og:type" content="website">
+    <title>MANS Bank - Modern Banking Reimagined</title>
+    <link rel="icon" type="image/png" href="/assets/logo-mans-www_1763935432670.png">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" data-testid="navbar">
+        <div class="nav-container">
+            <div class="logo" data-testid="logo-mans">
+                <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS Bank Logo" class="logo-img">
+                <span class="logo-text">MANS Bank</span>
+            </div>
+            <button class="menu-toggle" id="menuToggle" data-testid="button-menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="navLinks" data-testid="nav-links">
+                <li><a href="#features" data-testid="link-features">Features</a></li>
+                <li><a href="#cards" data-testid="link-cards">Cards</a></li>
+                <li><a href="#products" data-testid="link-products">Products</a></li>
+                <li><a href="#pricing" data-testid="link-pricing">Pricing</a></li>
+                <li><a href="/login.html" data-testid="link-login">Login</a></li>
+            </ul>
+            <button class="cta-button" onclick="window.location.href='/signup.html'" data-testid="button-open-account">Create Account</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" data-testid="section-hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS Bank Logo" class="hero-logo" data-testid="logo-hero">
+                <h1 class="hero-title" data-testid="text-hero-title">Experience Banking Reimagined</h1>
+                <p class="hero-subtitle" data-testid="text-hero-subtitle">Real-time transactions, instant notifications, and complete control at your fingertips.</p>
+                <button class="btn btn-white" data-testid="button-hero-cta">Get Started Today</button>
+            </div>
+            <div class="hero-phone">
+                <div class="phone-card" data-testid="phone-showcase">
+                    <div class="phone-header">
+                        <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS" class="phone-logo" data-testid="logo-phone">
+                        <span class="phone-title" data-testid="text-phone-title">MANS Bank</span>
+                    </div>
+                    <div class="notifications-container" data-testid="notifications-list">
+                        <div class="notification" data-testid="notification-1">
+                            <div class="notification-icon">→</div>
+                            <div class="notification-content">
+                                <p class="notification-title" data-testid="text-notif-1">Money Sent</p>
+                                <p class="notification-amount" data-testid="amount-notif-1">-$150.00 to John Doe</p>
+                            </div>
+                            <span class="notification-time" data-testid="time-notif-1">2 mins</span>
+                        </div>
+                        <div class="notification" data-testid="notification-2">
+                            <div class="notification-icon">←</div>
+                            <div class="notification-content">
+                                <p class="notification-title" data-testid="text-notif-2">Payment Received</p>
+                                <p class="notification-amount" data-testid="amount-notif-2">+$500.00 from Salary</p>
+                            </div>
+                            <span class="notification-time" data-testid="time-notif-2">45 mins</span>
+                        </div>
+                        <div class="notification" data-testid="notification-3">
+                            <div class="notification-icon">💳</div>
+                            <div class="notification-content">
+                                <p class="notification-title" data-testid="text-notif-3">Purchase</p>
+                                <p class="notification-amount" data-testid="amount-notif-3">-$45.99 at Coffee Shop</p>
+                            </div>
+                            <span class="notification-time" data-testid="time-notif-3">1 hour</span>
+                        </div>
+                        <div class="notification" data-testid="notification-4">
+                            <div class="notification-icon">🔐</div>
+                            <div class="notification-content">
+                                <p class="notification-title" data-testid="text-notif-4">Security Alert</p>
+                                <p class="notification-amount" data-testid="amount-notif-4">Login from New Device</p>
+                            </div>
+                            <span class="notification-time" data-testid="time-notif-4">3 hours</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Card Beam Section -->
+    <section id="cards" class="card-beam-section" data-testid="section-card-beam">
+        <h2 class="card-beam-title" data-testid="text-card-beam-title">Our Digital Cards</h2>
+        <div class="card-beam-container">
+            <div class="card-stream" id="cardStream">
+                <div class="card-line" id="cardLine"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features" data-testid="section-features">
+        <h2 class="section-title" data-testid="text-features-title">Why Choose MANS Bank</h2>
+
+        <!-- Lightning Fast Transfers -->
+        <div class="features-showcase" data-testid="feature-showcase-transfers">
+            <div class="features-content">
+                <h3 class="feature-title" data-testid="text-feature-instant-title">Lightning Fast Transfers</h3>
+                <p class="feature-description" data-testid="text-feature-instant-desc">Send money anywhere in seconds with our lightning-fast transfer system and global reach capabilities</p>
+                
+                <div class="features-highlights" data-testid="feature-highlights-transfers">
+                    <div class="feature-highlight" data-testid="highlight-speed">
+                        <div class="highlight-badge">⚡</div>
+                        <div class="highlight-text">Seconds</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-global">
+                        <div class="highlight-badge">🌐</div>
+                        <div class="highlight-text">Global</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-rates">
+                        <div class="highlight-badge">💱</div>
+                        <div class="highlight-text">Best Rates</div>
+                    </div>
+                </div>
+
+                <div class="features-list" data-testid="list-transfer-features">
+                    <div class="feature-item" data-testid="feature-instant">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Instant Transfers</h4>
+                            <p>Send money in seconds, not hours</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-global">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Global Reach</h4>
+                            <p>Transfer funds to over 150 countries</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-rates">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Best Exchange Rates</h4>
+                            <p>Real mid-market rates with no hidden fees</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-transfers">Send Money Now</button>
+            </div>
+
+            <div class="features-visual" data-testid="feature-visual-transfers">
+                <div class="feature-display-card">
+                    <div class="card-stat">⚡ <span>2 Seconds</span></div>
+                    <div class="card-stat">🌐 <span>150+ Countries</span></div>
+                    <div class="card-stat">💰 <span>Mid-Market Rates</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank-Grade Security -->
+        <div class="features-showcase reverse" data-testid="feature-showcase-security">
+            <div class="features-content">
+                <h3 class="feature-title" data-testid="text-feature-secure-title">Bank-Grade Security</h3>
+                <p class="feature-description" data-testid="text-feature-secure-desc">Your money is protected with military-grade encryption and 24/7 professional support</p>
+                
+                <div class="features-highlights" data-testid="feature-highlights-security">
+                    <div class="feature-highlight" data-testid="highlight-encryption">
+                        <div class="highlight-badge">🔐</div>
+                        <div class="highlight-text">Encryption</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-support">
+                        <div class="highlight-badge">24/7</div>
+                        <div class="highlight-text">Support</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-insurance">
+                        <div class="highlight-badge">🛡️</div>
+                        <div class="highlight-text">Insured</div>
+                    </div>
+                </div>
+
+                <div class="features-list" data-testid="list-security-features">
+                    <div class="feature-item" data-testid="feature-encryption">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Military-Grade Encryption</h4>
+                            <p>Your data protected with latest security standards</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-24-7">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>24/7 Support</h4>
+                            <p>Our team is always here to help you</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-insurance">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Full Insurance Coverage</h4>
+                            <p>Every deposit fully protected up to limits</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-security">Learn About Security</button>
+            </div>
+
+            <div class="features-visual" data-testid="feature-visual-security">
+                <div class="feature-display-card">
+                    <div class="security-icon">🔒</div>
+                    <div class="card-stat">SSL <span>Encryption</span></div>
+                    <div class="card-stat">ISO <span>Certified</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Savings -->
+        <div class="features-showcase" data-testid="feature-showcase-savings">
+            <div class="features-content">
+                <h3 class="feature-title" data-testid="text-feature-savings-title">Smart Savings</h3>
+                <p class="feature-description" data-testid="text-feature-savings-desc">Grow your money with competitive savings rates and intelligent financial tools</p>
+                
+                <div class="features-highlights" data-testid="feature-highlights-savings">
+                    <div class="feature-highlight" data-testid="highlight-grow">
+                        <div class="highlight-badge">📈</div>
+                        <div class="highlight-text">Grow</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-smart">
+                        <div class="highlight-badge">🧠</div>
+                        <div class="highlight-text">Smart</div>
+                    </div>
+                    <div class="feature-highlight" data-testid="highlight-auto">
+                        <div class="highlight-badge">⚙️</div>
+                        <div class="highlight-text">Auto</div>
+                    </div>
+                </div>
+
+                <div class="features-list" data-testid="list-savings-features">
+                    <div class="feature-item" data-testid="feature-grow">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Grow Your Money</h4>
+                            <p>Competitive savings rates to maximize returns</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-smart-tools">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Smart Tools</h4>
+                            <p>AI-powered budgeting and investment suggestions</p>
+                        </div>
+                    </div>
+                    <div class="feature-item" data-testid="feature-auto-invest">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Automatic Investing</h4>
+                            <p>Set goals and let our system work for you</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-savings">Start Saving</button>
+            </div>
+
+            <div class="features-visual" data-testid="feature-visual-savings">
+                <div class="feature-display-card">
+                    <div class="card-stat">📊 <span>Smart Goals</span></div>
+                    <div class="card-stat">📈 <span>4.5% APY</span></div>
+                    <div class="card-stat">🎯 <span>Auto Invest</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="products" data-testid="section-products">
+        <h2 class="section-title" data-testid="text-products-title">Our Products</h2>
+        
+        <!-- Debit Card Product -->
+        <div class="products-showcase" data-testid="product-showcase-debit">
+            <div class="products-content">
+                <h3 class="product-title" data-testid="text-debit-card-title">MANS Debit Card</h3>
+                <p class="product-description" data-testid="text-debit-card-desc">A sleek, modern debit card designed for the digital age. Contactless payments, instant notifications, and full control at your fingertips.</p>
+                
+                <div class="products-highlights" data-testid="product-highlights-debit">
+                    <div class="product-highlight" data-testid="highlight-zero-fees">
+                        <div class="highlight-badge">$0</div>
+                        <div class="highlight-text">Annual Fees</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-contactless">
+                        <div class="highlight-badge">NFC</div>
+                        <div class="highlight-text">Contactless</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-instant">
+                        <div class="highlight-badge">⚡</div>
+                        <div class="highlight-text">Instant</div>
+                    </div>
+                </div>
+
+                <div class="products-features" data-testid="list-card-features">
+                    <div class="product-feature" data-testid="feature-zero-fees">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Zero Annual Fees</h4>
+                            <p>No hidden charges or maintenance costs</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-contactless">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Contactless & NFC</h4>
+                            <p>Tap to pay technology for secure transactions</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-notifications">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Real-time Notifications</h4>
+                            <p>Get instant alerts on every transaction</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-debit-card">Get Debit Card</button>
+            </div>
+
+            <div class="products-visual" data-testid="product-visual-debit">
+                <div class="product-display-card">
+                    <div class="card-display-front">
+                        <div class="card-chip"></div>
+                        <div class="card-text">MANS BANK</div>
+                        <div class="card-number">•••• •••• •••• 4825</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile App Product -->
+        <div class="products-showcase reverse" data-testid="product-showcase-app">
+            <div class="products-content">
+                <h3 class="product-title" data-testid="text-app-title">Mobile App</h3>
+                <p class="product-description" data-testid="text-app-desc">Banking on the go has never been easier. Our intuitive app gives you complete control over your finances anytime, anywhere.</p>
+                
+                <div class="products-highlights" data-testid="product-highlights-app">
+                    <div class="product-highlight" data-testid="highlight-transfers">
+                        <div class="highlight-badge">P2P</div>
+                        <div class="highlight-text">Transfers</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-budget">
+                        <div class="highlight-badge">📊</div>
+                        <div class="highlight-text">Budgeting</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-biometric">
+                        <div class="highlight-badge">🔐</div>
+                        <div class="highlight-text">Biometric</div>
+                    </div>
+                </div>
+
+                <div class="products-features" data-testid="list-app-features">
+                    <div class="product-feature" data-testid="feature-transfers">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Instant P2P Transfers</h4>
+                            <p>Send money to anyone in seconds</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-budgeting">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Smart Budgeting Tools</h4>
+                            <p>Categorize and track your spending</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-biometric">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Biometric Security</h4>
+                            <p>Face ID or fingerprint login protection</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-mobile-app">Download App</button>
+            </div>
+
+            <div class="products-visual" data-testid="product-visual-app">
+                <div class="phone-card" data-testid="phone-showcase-app">
+                    <div class="phone-header">
+                        <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS" class="phone-logo" data-testid="logo-phone-app">
+                        <span class="phone-title" data-testid="text-phone-title-app">MANS Bank</span>
+                    </div>
+                    <div class="dashboard-content-wrapper" data-testid="dashboard-wrapper">
+                        <!-- Dashboard Header -->
+                        <div class="dashboard-header">
+                            <div class="dashboard-greeting" data-testid="text-dashboard-greeting">Hello, Alex</div>
+                            <div class="dashboard-time" data-testid="text-dashboard-time">Today</div>
+                        </div>
+
+                        <!-- Account Balance Card -->
+                        <div class="dashboard-balance-card" data-testid="card-account-balance">
+                            <div class="balance-label">Account Balance</div>
+                            <div class="balance-amount" data-testid="text-balance-amount">$12,450.87</div>
+                            <div class="balance-card-row">
+                                <div class="balance-stat">
+                                    <div class="stat-label">Available</div>
+                                    <div class="stat-value" data-testid="text-available">$10,200</div>
+                                </div>
+                                <div class="balance-stat">
+                                    <div class="stat-label">Savings</div>
+                                    <div class="stat-value" data-testid="text-savings-balance">$2,250.87</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="dashboard-actions" data-testid="section-quick-actions">
+                            <button class="action-btn" data-testid="button-send-money">
+                                <div class="action-icon">→</div>
+                                <div class="action-text">Send</div>
+                            </button>
+                            <button class="action-btn" data-testid="button-receive-money">
+                                <div class="action-icon">←</div>
+                                <div class="action-text">Request</div>
+                            </button>
+                            <button class="action-btn" data-testid="button-pay-bill">
+                                <div class="action-icon">⚡</div>
+                                <div class="action-text">Pay</div>
+                            </button>
+                            <button class="action-btn" data-testid="button-cards">
+                                <div class="action-icon">💳</div>
+                                <div class="action-text">Cards</div>
+                            </button>
+                        </div>
+
+                        <!-- Recent Transactions -->
+                        <div class="dashboard-transactions" data-testid="section-recent-transactions">
+                            <div class="transactions-title" data-testid="text-transactions-label">Recent Activity</div>
+                            <div class="transaction-item" data-testid="transaction-1">
+                                <div class="transaction-icon">🛒</div>
+                                <div class="transaction-details">
+                                    <div class="transaction-name">Groceries</div>
+                                    <div class="transaction-time">Today</div>
+                                </div>
+                                <div class="transaction-amount" data-testid="text-transaction-1">-$85.50</div>
+                            </div>
+                            <div class="transaction-item" data-testid="transaction-2">
+                                <div class="transaction-icon">💼</div>
+                                <div class="transaction-details">
+                                    <div class="transaction-name">Salary Income</div>
+                                    <div class="transaction-time">Yesterday</div>
+                                </div>
+                                <div class="transaction-amount positive" data-testid="text-transaction-2">+$3,500</div>
+                            </div>
+                            <div class="transaction-item" data-testid="transaction-3">
+                                <div class="transaction-icon">🍽️</div>
+                                <div class="transaction-details">
+                                    <div class="transaction-name">Dining</div>
+                                    <div class="transaction-time">Yesterday</div>
+                                </div>
+                                <div class="transaction-amount" data-testid="text-transaction-3">-$42.80</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Savings Account Product -->
+        <div class="products-showcase" data-testid="product-showcase-savings">
+            <div class="products-content">
+                <h3 class="product-title" data-testid="text-savings-title">Savings Account</h3>
+                <p class="product-description" data-testid="text-savings-desc">Earn attractive interest rates on your savings. Flexible terms and transparent pricing with no surprises.</p>
+                
+                <div class="products-highlights" data-testid="product-highlights-savings">
+                    <div class="product-highlight" data-testid="highlight-rate">
+                        <div class="highlight-badge">4.5%</div>
+                        <div class="highlight-text">APY Rate</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-compound">
+                        <div class="highlight-badge">📈</div>
+                        <div class="highlight-text">Monthly</div>
+                    </div>
+                    <div class="product-highlight" data-testid="highlight-safe">
+                        <div class="highlight-badge">🛡️</div>
+                        <div class="highlight-text">Insured</div>
+                    </div>
+                </div>
+
+                <div class="products-features" data-testid="list-savings-features">
+                    <div class="product-feature" data-testid="feature-rates">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Competitive Interest Rates</h4>
+                            <p>Highest rates in the industry</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-flexible">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>Flexible Terms</h4>
+                            <p>Access your money anytime</p>
+                        </div>
+                    </div>
+                    <div class="product-feature" data-testid="feature-safe">
+                        <span class="feature-dot">✓</span>
+                        <div>
+                            <h4>100% Safe & Insured</h4>
+                            <p>Fully protected by deposit insurance</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark-blue" data-testid="button-savings">Open Account</button>
+            </div>
+
+            <div class="products-visual" data-testid="product-visual-savings">
+                <div class="savings-display-card">
+                    <div class="savings-header">SAVINGS</div>
+                    <div class="savings-amount">$12,450.87</div>
+                    <div class="savings-growth">↑ 4.5% APY</div>
+                    <div class="savings-chart-mini">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing" data-testid="section-pricing">
+        <h2 class="section-title" data-testid="text-pricing-title">Simple, Transparent Pricing</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card" data-testid="card-pricing-basic">
+                <h3 data-testid="text-basic-plan">Basic Account</h3>
+                <div class="price" data-testid="price-basic">
+                    <span class="currency">$</span>
+                    <span class="amount">0</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="pricing-features">
+                    <li data-testid="feature-basic-1">✓  Debit Card</li>
+                    <li data-testid="feature-basic-2">✓  Mobile App</li>
+                    <li data-testid="feature-basic-3">✓  Instant Transfers</li>
+                    <li data-testid="feature-basic-4">✓  Zero Fees</li>
+                </ul>
+                <button class="btn btn-secondary" data-testid="button-basic-plan">Get Started</button>
+            </div>
+            <div class="pricing-card featured" data-testid="card-pricing-premium">
+                <div class="badge" data-testid="badge-popular">POPULAR</div>
+                <h3 data-testid="text-premium-plan">Premium Account</h3>
+                <div class="price" data-testid="price-premium">
+                    <span class="currency">$</span>
+                    <span class="amount">9.99</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="pricing-features">
+                    <li data-testid="feature-premium-1">✓  Everything in Basic</li>
+                    <li data-testid="feature-premium-2">✓  Premium Support</li>
+                    <li data-testid="feature-premium-3">✓  Higher Savings Rates</li>
+                    <li data-testid="feature-premium-4">✓  Priority Processing</li>
+                </ul>
+                <button class="btn btn-primary" data-testid="button-premium-plan">Get Started</button>
+            </div>
+            <div class="pricing-card" data-testid="card-pricing-business">
+                <h3 data-testid="text-business-plan">Business Account</h3>
+                <div class="price" data-testid="price-business">
+                    <span class="currency">$</span>
+                    <span class="amount">29.99</span>
+                    <span class="period">/month</span>
+                </div>
+                <ul class="pricing-features">
+                    <li data-testid="feature-business-1">✓  Everything in Premium</li>
+                    <li data-testid="feature-business-2">✓  Business Tools</li>
+                    <li data-testid="feature-business-3">✓  API Access</li>
+                    <li data-testid="feature-business-4">✓  Dedicated Account Manager</li>
+                </ul>
+                <button class="btn btn-secondary" data-testid="button-business-plan">Get Started</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact" class="cta-section" data-testid="section-cta">
+        <h2 data-testid="text-cta-heading">Ready to Join MANS Bank?</h2>
+        <p data-testid="text-cta-subheading">Open your account in minutes and start banking smarter today.</p>
+        <button class="btn btn-primary btn-large" data-testid="button-open-account-cta">Open Account Now</button>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" data-testid="footer">
+        <div class="footer-bottom" data-testid="footer-bottom">
+            <p data-testid="text-built-by">Built with love by <strong>Oussama</strong></p>
+            <div class="footer-flex" data-testid="footer-flex">
+                <p data-testid="text-copyright">&copy; 2025 MANS Bank. All rights reserved.</p>
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" data-testid="link-github" aria-label="GitHub">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/script.js"></script>
+</body>
+</html>

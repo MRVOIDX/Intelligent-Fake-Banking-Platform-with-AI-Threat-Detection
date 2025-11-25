@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your MANS Bank Dashboard - Manage your account and finances">
+    <title>Dashboard - MANS Bank</title>
+    <link rel="icon" type="image/png" href="/assets/logo-mans-www_1763935432670.png">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            background: var(--light-gray);
+        }
+
+        .dashboard-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+        }
+
+        .dashboard-nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .dashboard-logo img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .dashboard-logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .dashboard-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dashboard-user-name {
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .logout-btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-greeting {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-date {
+            color: var(--text-secondary);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .balance-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .balance-stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .balance-stat {
+            flex: 1;
+        }
+
+        .balance-stat-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 0.25rem;
+        }
+
+        .balance-stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .card-display-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .virtual-card {
+            width: 100%;
+            max-width: 320px;
+            aspect-ratio: 1.586;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: var(--white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .virtual-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        }
+
+        .card-chip {
+            width: 45px;
+            height: 35px;
+            background: linear-gradient(135deg, #f4d03f 0%, #d4af37 100%);
+            border-radius: 6px;
+            margin-bottom: 2rem;
+        }
+
+        .card-number {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .card-holder {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-name {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .card-bank {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 82, 204, 0.15);
+            border-color: var(--primary-blue);
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .action-title {
+            font-weight: 600;
+            color: var(--dark-gray);
+            font-size: 0.95rem;
+        }
+
+        .transactions-section {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .transactions-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-item:hover {
+            background: var(--light-gray);
+        }
+
+        .transaction-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--light-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-weight: 600;
+            color: var(--dark-gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .transaction-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .transaction-amount {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .transaction-amount.positive {
+            color: #10b981;
+        }
+
+        .transaction-amount.negative {
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-main {
+                padding: 5rem 1rem 1rem;
+            }
+
+            .dashboard-greeting {
+                font-size: 1.5rem;
+            }
+
+            .balance-amount {
+                font-size: 2rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .balance-stats {
+                gap: 1rem;
+            }
+
+            .dashboard-user-name {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="dashboard-navbar" data-testid="navbar-dashboard">
+        <div class="dashboard-nav-container">
+            <div class="dashboard-logo">
+                <img src="/assets/logo-mans-www_1763935432670.png" alt="MANS Bank Logo" data-testid="logo-dashboard">
+                <span class="dashboard-logo-text" data-testid="text-logo">MANS Bank</span>
+            </div>
+            <div class="dashboard-user">
+                <span class="dashboard-user-name" id="userName" data-testid="text-username"></span>
+                <button class="logout-btn" id="logoutBtn" data-testid="button-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1 class="dashboard-greeting" id="greeting" data-testid="text-greeting">Welcome back!</h1>
+            <p class="dashboard-date" id="currentDate" data-testid="text-date"></p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="balance-card" data-testid="card-balance">
+                <div class="balance-label">Total Balance</div>
+                <div class="balance-amount" id="totalBalance" data-testid="text-total-balance">$0.00</div>
+                <div class="balance-stats">
+                    <div class="balance-stat">
+                        <div class="balance-stat-label">Available</div>
+                        <div class="balance-stat-value" id="availableBalance" data-testid="text-available-balance">$0.00</div>
+                    </div>
+                    <div class="balance-stat">
+                        <div class="balance-stat-label">Savings</div>
+                        <div class="balance-stat-value" id="savingsBalance" data-testid="text-savings-balance">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-display-card" data-testid="card-virtual">
+                <div class="virtual-card">
+                    <div class="card-chip"></div>
+                    <div class="card-number" id="cardNumber" data-testid="text-card-number">•••• •••• •••• ••••</div>
+                    <div class="card-info">
+                        <div>
+                            <div class="card-holder">Card Holder</div>
+                            <div class="card-name" id="cardHolder" data-testid="text-card-holder">User Name</div>
+                        </div>
+                        <div class="card-bank" data-testid="text-card-bank">MANS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="dashboard-greeting" style="margin-bottom: 1rem;" data-testid="text-quick-actions-title">Quick Actions</h2>
+        <div class="quick-actions">
+            <div class="action-card" data-testid="action-send">
+                <div class="action-icon">→</div>
+                <div class="action-title">Send Money</div>
+            </div>
+            <div class="action-card" data-testid="action-receive">
+                <div class="action-icon">←</div>
+                <div class="action-title">Request Money</div>
+            </div>
+            <div class="action-card" data-testid="action-pay">
+                <div class="action-icon">⚡</div>
+                <div class="action-title">Pay Bills</div>
+            </div>
+            <div class="action-card" data-testid="action-cards">
+                <div class="action-icon">💳</div>
+                <div class="action-title">My Cards</div>
+            </div>
+        </div>
+
+        <div class="transactions-section" data-testid="section-transactions">
+            <h2 class="transactions-header" data-testid="text-transactions-title">Recent Transactions</h2>
+            <div id="transactionsList" data-testid="list-transactions">
+                <div class="transaction-item" data-testid="transaction-loading">
+                    <div style="width: 100%; text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        Loading transactions...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
