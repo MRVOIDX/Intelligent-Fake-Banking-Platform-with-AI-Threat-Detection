@@ -224,7 +224,6 @@ Intelligent-Fake-Banking-Platform-with-AI-Threat-Detection/
 │   └── admin-dashboard.js        # Admin panel + CyberGuardAI
 ├── styles.css                    # Global styles
 ├── THREAT_TESTING_GUIDE.md       # Comprehensive testing documentation
-├── replit.md                     # Technical documentation
 └── README.md                     # This file
 ```
 
@@ -306,7 +305,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **OWASP** - For comprehensive security guidelines and vulnerability documentation
 - **Groq AI** - For providing free AI API access for educational purposes
 - **Flask Community** - For excellent documentation and support
-- **Replit** - For providing a development environment and hosting platform
 
 ---
 
