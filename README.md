@@ -26,8 +26,6 @@
 
 MANS Bank is a comprehensive digital banking platform built as an educational project to demonstrate modern web development practices and advanced cybersecurity concepts. The project showcases a full-stack application with dual backend implementations (Python Flask and Node.js/TypeScript) and features an intelligent threat detection system powered by AI.
 
-**Live Demo**: [Add your deployed URL here]
-
 ## ✨ Key Features
 
 ### Banking Features
@@ -73,7 +71,7 @@ The crown jewel of this project is **CyberGuardAI**, an advanced security system
 ```
 User Input → Local Pattern Detection (11 detectors) → Threat Classification
                          ↓
-              Optional: AI Analysis (Gemini)
+              Optional: AI Analysis (Groq API)
                          ↓
               Severity Assessment + Recommendations
                          ↓
@@ -82,7 +80,7 @@ User Input → Local Pattern Detection (11 detectors) → Threat Classification
 
 **Dual-Layer Protection:**
 1. **Local Detection** - Regex-based pattern matching (works offline)
-2. **AI Enhancement** - Google Gemini AI for context-aware analysis (optional)
+2. **AI Enhancement** - Groq API with Llama 3.3 70B for context-aware analysis (optional)
 
 ## 🛠️ Tech Stack
 
@@ -98,7 +96,7 @@ User Input → Local Pattern Detection (11 detectors) → Threat Classification
 - **Google Fonts** - Inter & Space Grotesk typography
 
 ### AI/ML
-- **Google Gemini AI** - Advanced threat analysis and classification
+- **Groq API** - Advanced threat analysis and classification using Llama 3.3 70B
 - **Pattern Recognition** - 200+ regex patterns for threat detection
 
 ### Security
@@ -139,10 +137,10 @@ http://localhost:5000
 
 ### Optional: Enable AI Features
 
-Get a free Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+Get a free Groq API key from [Groq Console](https://console.groq.com)
 
 ```bash
-export GEMINI_API_KEY="your-api-key-here"
+export GROQ_API_KEY="your-api-key-here"
 npm run dev
 ```
 
@@ -256,7 +254,7 @@ This project demonstrates proficiency in:
 ✅ Version control with Git  
 
 ### AI/ML Integration
-✅ API integration with Google Gemini  
+✅ API integration with Groq  
 ✅ Prompt engineering for security analysis  
 ✅ Fallback strategies for offline operation  
 ✅ AI-enhanced decision making  
@@ -306,7 +304,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🙏 Acknowledgments
 
 - **OWASP** - For comprehensive security guidelines and vulnerability documentation
-- **Google Gemini AI** - For providing free AI API access for educational purposes
+- **Groq AI** - For providing free AI API access for educational purposes
 - **Flask Community** - For excellent documentation and support
 - **Replit** - For providing a development environment and hosting platform
 
@@ -314,8 +312,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ### 📊 Project Stats
 
-- **Lines of Code**: ~3,500+
-- **Development Time**: 7 days
+- **Lines of Code**: ~4,500+
+- **Development Time**: 21 days
 - **Threat Patterns**: 200+
 - **Test Cases**: 44
 - **Languages**: Python, TypeScript, JavaScript, HTML, CSS
