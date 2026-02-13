@@ -1,114 +1,55 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
 import os
-import secrets
-from datetime import datetime
 import re
+from datetime import datetime
+
+import database as db
 
 app = Flask(__name__, static_folder='public')
 CORS(app)
 
-# In-memory storage
-users = {}
-user_accounts = {}
-blocked_users = set()
-login_logs = []
-security_events = []
-threat_detections = []
-active_tokens = {}  # Token-based authentication
+db.init_database()
 
-# Admin tracking
 admin_users = {'admin@mans.bank'}
 
-# Default admin user
-users['admin@mans.bank'] = {
-    'email': 'admin@mans.bank',
-    'password': generate_password_hash('admin123'),
-    'name': 'Admin User',
-    'isAdmin': True
-}
-user_accounts['admin@mans.bank'] = {
-    'balance': 12450.87,
-    'available': 10200.00,
-    'savings': 2250.87,
-    'card_number': '4825',
-    'transactions': [
-        {'type': 'sent', 'amount': -150.00, 'to': 'John Doe', 'time': '2 mins'},
-        {'type': 'received', 'amount': 500.00, 'from': 'Salary', 'time': '45 mins'},
-        {'type': 'purchase', 'amount': -45.99, 'at': 'Coffee Shop', 'time': '1 hour'},
-    ]
-}
-
-def generate_token():
-    """Generate a secure random token"""
-    return secrets.token_hex(32)
-
 def get_user_from_token(request):
-    """Extract user email from Bearer token"""
     auth_header = request.headers.get('Authorization', '')
     if auth_header.startswith('Bearer '):
         token = auth_header[7:]
-        return active_tokens.get(token)
+        return db.get_user_from_token(token)
     return None
 
-def log_login_attempt(email, success, ip_address, user_agent='', reason=''):
-    """Log all login attempts"""
-    login_logs.append({
-        'timestamp': datetime.now().isoformat(),
-        'email': email,
-        'success': success,
-        'ip_address': ip_address,
-        'user_agent': user_agent,
-        'reason': reason
-    })
-    
-    if len(login_logs) > 1000:
-        login_logs.pop(0)
-
-def log_security_event(event_type, description, severity, data=None):
-    """Log security events for monitoring"""
-    security_events.append({
-        'timestamp': datetime.now().isoformat(),
-        'type': event_type,
-        'description': description,
-        'severity': severity,
-        'data': data or {}
-    })
-    
-    if len(security_events) > 500:
-        security_events.pop(0)
-
-def detect_brute_force(email, ip_address):
-    """Detect brute force attempts"""
-    recent_failures = [
-        log for log in login_logs[-50:]
-        if not log['success'] and (log['email'] == email or log['ip_address'] == ip_address)
-    ]
-    
-    if len(recent_failures) >= 5:
-        return True, len(recent_failures)
-    return False, len(recent_failures)
-
 def detect_sql_injection(text):
-    """SQL injection detection"""
     if not text:
         return False, []
     
     patterns = [
+        r"('\s*OR\s+\d+\s*=\s*\d+)",
+        r"('\s*OR\s+'[^']*'\s*=\s*'[^']*')",
         r"(\bUNION\b.*\bSELECT\b)",
         r"(\bDROP\b.*\bTABLE\b)",
         r"(\bINSERT\b.*\bINTO\b)",
         r"(\bDELETE\b.*\bFROM\b)",
-        r"(--|\#|\/\*)",
-        r"(\bOR\b.*=.*)",
-        r"(\bAND\b.*=.*)",
-        r"('.*\bOR\b.*'=')",
+        r"(--)",
+        r"(#\s*$|#\s+)",
+        r"(/\*.*\*/)",
+        r"(\bOR\b\s+\d+\s*=\s*\d+)",
+        r"(\bAND\b\s+\d+\s*=\s*\d+)",
+        r"('\s*;\s*--)",
         r"(\bEXEC\b.*\()",
         r"(\bUPDATE\b.*\bSET\b)",
         r"(\bSELECT\b.*\bFROM\b)",
-        r"(';.*--)",
-        r"(\bHAVING\b.*=)",
+        r"(\bHAVING\b\s+\d+\s*=)",
+        r"('\s*OR\s+1\s*=\s*1)",
+        r"(\"\s*OR\s+1\s*=\s*1)",
+        r"(;\s*DROP\b)",
+        r"(;\s*DELETE\b)",
+        r"(;\s*UPDATE\b)",
+        r"(;\s*INSERT\b)",
+        r"(\bWAITFOR\b.*\bDELAY\b)",
+        r"(\bBENCHMARK\b\s*\()",
+        r"(\bSLEEP\b\s*\()",
     ]
     
     detected = []
@@ -119,7 +60,6 @@ def detect_sql_injection(text):
     return len(detected) > 0, detected
 
 def detect_xss(text):
-    """Cross-Site Scripting (XSS) detection"""
     if not text:
         return False, []
     
@@ -152,27 +92,40 @@ def detect_xss(text):
     return len(detected) > 0, detected
 
 def detect_command_injection(text):
-    """Command injection detection"""
     if not text:
         return False, []
     
     patterns = [
+        r";\s*rm\s+-rf",
+        r";\s*rm\s+-r",
+        r";\s*rm\s+/",
         r";\s*(ls|cat|pwd|whoami|id|uname)",
         r"\|\s*(ls|cat|pwd|whoami|id|uname)",
-        r"`.*`",
-        r"\$\(.*\)",
-        r"&&\s*(rm|mv|cp|chmod)",
-        r"\|\|\s*(rm|mv|cp|chmod)",
+        r"`[^`]+`",
+        r"\$\([^)]+\)",
+        r"&&\s*(rm|mv|cp|chmod|chown)",
+        r"\|\|\s*(rm|mv|cp|chmod|chown)",
         r">\s*/dev/",
         r"<\s*/etc/",
-        r"nc\s+-",
-        r"bash\s+-",
-        r"sh\s+-",
-        r"curl\s+",
-        r"wget\s+",
-        r"powershell",
-        r"cmd\.exe",
-        r"/bin/",
+        r"nc\s+-[elp]",
+        r"\bnc\s+.*\d+",
+        r"bash\s+-[ci]",
+        r"sh\s+-[ci]",
+        r"curl\s+.*\|",
+        r"wget\s+.*\|",
+        r"\bpowershell\b",
+        r"\bcmd\.exe\b",
+        r"/bin/(sh|bash|zsh|ksh)",
+        r";\s*echo\s+",
+        r";\s*cat\s+/etc/",
+        r"\|.*base64",
+        r";\s*python\s+-c",
+        r";\s*perl\s+-e",
+        r";\s*ruby\s+-e",
+        r"\bsudo\s+",
+        r"\bchmod\s+[0-7]{3,4}",
+        r"\bmkfifo\b",
+        r";\s*/",
     ]
     
     detected = []
@@ -183,7 +136,6 @@ def detect_command_injection(text):
     return len(detected) > 0, detected
 
 def detect_path_traversal(text):
-    """Path traversal detection"""
     if not text:
         return False, []
     
@@ -210,12 +162,14 @@ def detect_path_traversal(text):
     return len(detected) > 0, detected
 
 def detect_ldap_injection(text):
-    """LDAP injection detection"""
     if not text:
         return False, []
     
     patterns = [
-        r"\*\)",
+        r"\*\)\(uid=",
+        r"\*\)\(cn=",
+        r"\*\)\(",
+        r"\)\(uid=\*\)\)\(",
         r"\(\|",
         r"\(&",
         r"\(!\(",
@@ -223,8 +177,12 @@ def detect_ldap_injection(text):
         r"\\2a",
         r"\\28",
         r"\\29",
-        r"\|\|",
-        r"&&",
+        r"\(\*\)",
+        r"uid=\*",
+        r"cn=\*",
+        r"\|\(.*=\*\)",
+        r"&\(.*=\*\)",
+        r"\)\)\(.*=",
     ]
     
     detected = []
@@ -235,13 +193,16 @@ def detect_ldap_injection(text):
     return len(detected) > 0, detected
 
 def detect_xxe(text):
-    """XML External Entity (XXE) detection"""
     if not text:
         return False, []
     
     patterns = [
+        r"<!ENTITY\s+\w+\s+SYSTEM",
+        r"<!ENTITY\s+%\s*\w+",
         r"<!ENTITY",
-        r"<!DOCTYPE",
+        r"<!DOCTYPE[^>]*\[",
+        r"<!DOCTYPE.*SYSTEM",
+        r"SYSTEM\s+[\"']file:///",
         r"SYSTEM\s+[\"']file://",
         r"SYSTEM\s+[\"']http://",
         r"SYSTEM\s+[\"']https://",
@@ -249,6 +210,14 @@ def detect_xxe(text):
         r"SYSTEM\s+[\"']php://",
         r"SYSTEM\s+[\"']expect://",
         r"SYSTEM\s+[\"']data://",
+        r"SYSTEM\s+[\"']gopher://",
+        r"SYSTEM\s+[\"']ftp://",
+        r"SYSTEM\s+[\"']/etc/passwd",
+        r"PUBLIC\s+[\"']",
+        r"<!ATTLIST",
+        r"<!NOTATION",
+        r"&\w+;.*file:",
+        r"%\w+;",
     ]
     
     detected = []
@@ -259,27 +228,49 @@ def detect_xxe(text):
     return len(detected) > 0, detected
 
 def detect_nosql_injection(text):
-    """NoSQL injection detection"""
     if not text:
         return False, []
     
     patterns = [
-        r"\$ne:",
-        r"\$gt:",
-        r"\$lt:",
-        r"\$gte:",
-        r"\$lte:",
-        r"\$regex:",
-        r"\$where:",
-        r"\$exists:",
-        r"\$type:",
-        r"\$or:",
-        r"\$and:",
-        r"\$not:",
-        r"{\s*\$",
+        r'"\$ne"\s*:',
+        r"'\$ne'\s*:",
+        r"\$ne\s*:",
+        r'"\$gt"\s*:',
+        r"'\$gt'\s*:",
+        r"\$gt\s*:",
+        r'"\$lt"\s*:',
+        r"\$lt\s*:",
+        r'"\$gte"\s*:',
+        r"\$gte\s*:",
+        r'"\$lte"\s*:',
+        r"\$lte\s*:",
+        r'"\$regex"\s*:',
+        r"\$regex\s*:",
+        r'"\$where"\s*:',
+        r"\$where\s*:",
+        r'"\$exists"\s*:',
+        r"\$exists\s*:",
+        r'"\$type"\s*:',
+        r"\$type\s*:",
+        r'"\$or"\s*:',
+        r"\$or\s*:",
+        r'"\$and"\s*:',
+        r"\$and\s*:",
+        r'"\$not"\s*:',
+        r"\$not\s*:",
+        r'"\$in"\s*:',
+        r"\$in\s*:",
+        r'"\$nin"\s*:',
+        r"\$nin\s*:",
+        r"{\s*[\"']\$",
         r"\.find\s*\(",
+        r"\.findOne\s*\(",
         r"\.remove\s*\(",
+        r"\.delete\s*\(",
         r"\.insert\s*\(",
+        r"\.update\s*\(",
+        r"{\s*\$ne\s*:\s*null\s*}",
+        r'{\s*"\$ne"\s*:\s*null\s*}',
     ]
     
     detected = []
@@ -290,24 +281,33 @@ def detect_nosql_injection(text):
     return len(detected) > 0, detected
 
 def detect_ssrf(text):
-    """Server-Side Request Forgery (SSRF) detection"""
     if not text:
         return False, []
     
     patterns = [
-        r"localhost",
-        r"127\.0\.0\.1",
-        r"0\.0\.0\.0",
-        r"192\.168\.",
-        r"10\.\d+\.\d+\.\d+",
-        r"172\.(1[6-9]|2\d|3[0-1])\.",
+        r"https?://localhost",
+        r"https?://127\.0\.0\.1",
+        r"https?://0\.0\.0\.0",
+        r"https?://\[::1\]",
+        r"https?://192\.168\.\d+\.\d+",
+        r"https?://10\.\d+\.\d+\.\d+",
+        r"https?://172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+",
+        r"https?://169\.254\.\d+\.\d+",
         r"file://",
         r"gopher://",
         r"dict://",
-        r"ftp://",
+        r"ftp://localhost",
         r"tftp://",
         r"ldap://",
         r"@\d+\.\d+\.\d+\.\d+",
+        r"https?://[^/]*/admin",
+        r"https?://[^/]*/api/",
+        r"https?://[^/]*/internal",
+        r"https?://metadata\.",
+        r"https?://169\.254\.169\.254",
+        r"https?://[a-f0-9]+\.burpcollaborator\.",
+        r"https?://.*\.internal",
+        r"https?://.*\.local",
     ]
     
     detected = []
@@ -318,23 +318,33 @@ def detect_ssrf(text):
     return len(detected) > 0, detected
 
 def detect_header_injection(text):
-    """HTTP Header injection detection"""
     if not text:
         return False, []
     
     patterns = [
+        r"\\r\\n.*Set-Cookie",
+        r"\\r\\n.*Location:",
         r"\\r\\n",
         r"\\n",
         r"\\r",
         r"%0d%0a",
         r"%0a",
         r"%0d",
-        r"\n\r",
-        r"\r\n",
-        r"Set-Cookie:",
-        r"Location:",
-        r"Content-Type:",
-        r"Content-Length:",
+        r"\r\nSet-Cookie:",
+        r"\r\nLocation:",
+        r"\r\nContent-Type:",
+        r"\r\nContent-Length:",
+        r"\r\nX-",
+        r"\nSet-Cookie:",
+        r"\nLocation:",
+        r"\nContent-Type:",
+        r"\nX-Forwarded",
+        r"\nHost:",
+        r"Set-Cookie:\s*\w+=",
+        r"Location:\s*http",
+        r"X-Forwarded-For:",
+        r"X-Forwarded-Host:",
+        r"\r\n\r\n",
     ]
     
     detected = []
@@ -345,7 +355,6 @@ def detect_header_injection(text):
     return len(detected) > 0, detected
 
 def detect_email_injection(text):
-    """Email injection detection"""
     if not text:
         return False, []
     
@@ -372,7 +381,6 @@ def detect_email_injection(text):
     return len(detected) > 0, detected
 
 def detect_file_upload_threats(text):
-    """Malicious file upload detection"""
     if not text:
         return False, []
     
@@ -404,10 +412,8 @@ def detect_file_upload_threats(text):
     return len(detected) > 0, detected
 
 def check_threat(data):
-    """Check for various threats in incoming data"""
     threats = []
     
-    # List of all detection functions with their names
     detectors = [
         ('SQL Injection', detect_sql_injection),
         ('XSS', detect_xss),
@@ -424,7 +430,6 @@ def check_threat(data):
     
     for key, value in data.items():
         if isinstance(value, str):
-            # Check all threat types
             for threat_name, detector_func in detectors:
                 is_threat, patterns = detector_func(value)
                 if is_threat:
@@ -432,397 +437,41 @@ def check_threat(data):
                         'type': threat_name,
                         'field': key,
                         'patterns': patterns,
-                        'value': value[:100]  # Truncate for safety
+                        'value': value[:100]
                     })
     
     return threats
 
-@app.route('/')
-def serve_index():
-    return send_from_directory('public', 'index.html')
+def analyze_threat_with_ai(threat_data, source='api_request'):
+    """Analyze detected threats with Groq AI and create alerts"""
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    
+    if not groq_api_key:
+        return None
+    
+    text_to_analyze = str(threat_data)
+    result = analyze_with_groq(text_to_analyze, groq_api_key)
+    
+    if result.get('success'):
+        analysis = result['analysis']
+        if analysis.get('threat_detected'):
+            db.add_threat_detection(text_to_analyze, analysis, 'gemini_ai')
+            generate_ai_alert_for_threat(analysis, text_to_analyze, source)
+            return analysis
+    
+    return None
 
-@app.route('/<path:path>')
-def serve_static(path):
-    if os.path.exists(os.path.join('public', path)):
-        return send_from_directory('public', path)
-    return send_from_directory('public', 'index.html')
-
-@app.route('/api/signup', methods=['POST'])
-def signup():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-    name = data.get('name')
-    
-    ip_address = request.remote_addr
-    
-    threats = check_threat(data)
-    if threats:
-        log_security_event(
-            'signup_threat',
-            f'Threat detected in signup attempt from {ip_address}',
-            'high',
-            {'threats': threats, 'email': email}
-        )
-        return jsonify({'error': 'Invalid input detected'}), 400
-    
-    if not email or not password or not name:
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    if email in users:
-        return jsonify({'error': 'Email already exists'}), 400
-    
-    users[email] = {
-        'email': email,
-        'password': generate_password_hash(password),
-        'name': name,
-        'isAdmin': False
-    }
-    
-    user_accounts[email] = {
-        'balance': 1000.00,
-        'available': 1000.00,
-        'savings': 0.00,
-        'card_number': str(secrets.randbelow(9000) + 1000),
-        'transactions': [
-            {'type': 'received', 'amount': 1000.00, 'from': 'Welcome Bonus', 'time': 'Just now'},
-        ]
-    }
-    
-    token = generate_token()
-    active_tokens[token] = email
-    
-    log_login_attempt(email, True, ip_address, request.headers.get('User-Agent', ''), 'New signup')
-    
-    return jsonify({
-        'message': 'Account created successfully',
-        'token': token,
-        'isAdmin': False,
-        'user': {
-            'email': email,
-            'name': name
+def analyze_with_groq(text_to_analyze, groq_api_key):
+    try:
+        import requests
+        import json as json_lib
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {groq_api_key}'
         }
-    }), 201
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-    
-    ip_address = request.remote_addr
-    user_agent = request.headers.get('User-Agent', '')
-    
-    threats = check_threat(data)
-    if threats:
-        log_security_event(
-            'login_threat',
-            f'Threat detected in login attempt from {ip_address}',
-            'high',
-            {'threats': threats, 'email': email}
-        )
-        log_login_attempt(email, False, ip_address, user_agent, 'Threat detected')
-        return jsonify({'error': 'Invalid input detected'}), 400
-    
-    if not email or not password:
-        log_login_attempt(email or 'unknown', False, ip_address, user_agent, 'Missing credentials')
-        return jsonify({'error': 'Missing email or password'}), 400
-    
-    if email in blocked_users:
-        log_login_attempt(email, False, ip_address, user_agent, 'User blocked')
-        log_security_event(
-            'blocked_user_attempt',
-            f'Blocked user {email} attempted login from {ip_address}',
-            'medium',
-            {'email': email, 'ip': ip_address}
-        )
-        return jsonify({'error': 'Account is blocked. Contact administrator.'}), 403
-    
-    is_brute_force, attempt_count = detect_brute_force(email, ip_address)
-    if is_brute_force:
-        log_security_event(
-            'brute_force_detected',
-            f'Brute force attempt detected for {email} from {ip_address}',
-            'critical',
-            {'email': email, 'ip': ip_address, 'attempts': attempt_count}
-        )
-    
-    user = users.get(email)
-    if not user or not check_password_hash(user['password'], password):
-        log_login_attempt(email, False, ip_address, user_agent, 'Invalid credentials')
-        return jsonify({'error': 'Invalid email or password'}), 401
-    
-    token = generate_token()
-    active_tokens[token] = email
-    
-    log_login_attempt(email, True, ip_address, user_agent, 'Successful login')
-    
-    return jsonify({
-        'message': 'Login successful',
-        'token': token,
-        'isAdmin': user.get('isAdmin', False),
-        'user': {
-            'email': user['email'],
-            'name': user['name']
-        }
-    }), 200
-
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    auth_header = request.headers.get('Authorization', '')
-    if auth_header.startswith('Bearer '):
-        token = auth_header[7:]
-        active_tokens.pop(token, None)
-    return jsonify({'message': 'Logged out successfully'}), 200
-
-@app.route('/api/account', methods=['GET'])
-def get_account():
-    user_email = get_user_from_token(request)
-    
-    if not user_email:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user = users.get(user_email)
-    account = user_accounts.get(user_email)
-    
-    if not user or not account:
-        return jsonify({'error': 'User not found'}), 404
-    
-    return jsonify({
-        'user': {
-            'email': user['email'],
-            'name': user['name'],
-            'isAdmin': user.get('isAdmin', False)
-        },
-        'account': account
-    }), 200
-
-@app.route('/api/check-auth', methods=['GET'])
-def check_auth():
-    user_email = get_user_from_token(request)
-    
-    if not user_email:
-        return jsonify({'authenticated': False}), 200
-    
-    user = users.get(user_email)
-    if not user:
-        return jsonify({'authenticated': False}), 200
-    
-    return jsonify({
-        'authenticated': True,
-        'user': {
-            'email': user['email'],
-            'name': user['name'],
-            'isAdmin': user.get('isAdmin', False)
-        }
-    }), 200
-
-# Admin endpoints
-@app.route('/api/admin/users', methods=['GET'])
-def get_all_users():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    user_list = []
-    for email, user in users.items():
-        account = user_accounts.get(email)
-        user_list.append({
-            'email': email,
-            'name': user['name'],
-            'isAdmin': user.get('isAdmin', False),
-            'blocked': email in blocked_users,
-            'account': account
-        })
-    
-    return jsonify({'users': user_list}), 200
-
-@app.route('/api/admin/add-funds', methods=['POST'])
-def add_funds():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    data = request.json
-    target_email = data.get('email')
-    amount = data.get('amount')
-    
-    if not target_email or not amount or amount <= 0:
-        return jsonify({'error': 'Invalid request'}), 400
-    
-    if target_email not in user_accounts:
-        return jsonify({'error': 'User not found'}), 404
-    
-    user_accounts[target_email]['balance'] += amount
-    user_accounts[target_email]['available'] += amount
-    
-    user_accounts[target_email]['transactions'].insert(0, {
-        'type': 'received',
-        'amount': amount,
-        'from': 'Admin Credit',
-        'time': 'Just now'
-    })
-    
-    log_security_event(
-        'admin_add_funds',
-        f'Admin added ${amount} to {target_email}',
-        'low',
-        {'admin': user_email, 'target': target_email, 'amount': amount}
-    )
-    
-    return jsonify({'message': 'Funds added successfully', 'new_balance': user_accounts[target_email]['balance']}), 200
-
-@app.route('/api/admin/block-user', methods=['POST'])
-def block_user():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    data = request.json
-    target_email = data.get('email')
-    blocked = data.get('blocked', True)
-    
-    if not target_email:
-        return jsonify({'error': 'Invalid request'}), 400
-    
-    if target_email not in users:
-        return jsonify({'error': 'User not found'}), 404
-    
-    if target_email in admin_users:
-        return jsonify({'error': 'Cannot block admin users'}), 400
-    
-    if blocked:
-        blocked_users.add(target_email)
-        # Remove active tokens
-        tokens_to_remove = [token for token, email in active_tokens.items() if email == target_email]
-        for token in tokens_to_remove:
-            active_tokens.pop(token, None)
-        message = f'User {target_email} has been blocked'
-    else:
-        blocked_users.discard(target_email)
-        message = f'User {target_email} has been unblocked'
-    
-    log_security_event(
-        'admin_block_user',
-        message,
-        'medium',
-        {'admin': user_email, 'target': target_email, 'blocked': blocked}
-    )
-    
-    return jsonify({'message': message}), 200
-
-@app.route('/api/admin/delete-user', methods=['DELETE'])
-def delete_user():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    data = request.json
-    target_email = data.get('email')
-    
-    if not target_email:
-        return jsonify({'error': 'Invalid request'}), 400
-    
-    if target_email not in users:
-        return jsonify({'error': 'User not found'}), 404
-    
-    if target_email in admin_users:
-        return jsonify({'error': 'Cannot delete admin users'}), 400
-    
-    users.pop(target_email, None)
-    user_accounts.pop(target_email, None)
-    blocked_users.discard(target_email)
-    
-    # Remove active tokens
-    tokens_to_remove = [token for token, email in active_tokens.items() if email == target_email]
-    for token in tokens_to_remove:
-        active_tokens.pop(token, None)
-    
-    log_security_event(
-        'admin_delete_user',
-        f'Admin deleted user {target_email}',
-        'high',
-        {'admin': user_email, 'target': target_email}
-    )
-    
-    return jsonify({'message': f'User {target_email} has been deleted'}), 200
-
-@app.route('/api/admin/security-logs', methods=['GET'])
-def get_security_logs():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    log_type = request.args.get('type', 'all')
-    limit = int(request.args.get('limit', 100))
-    
-    if log_type == 'login':
-        logs = sorted(login_logs, key=lambda x: x['timestamp'], reverse=True)[:limit]
-        return jsonify({'logs': logs}), 200
-    elif log_type == 'security':
-        logs = sorted(security_events, key=lambda x: x['timestamp'], reverse=True)[:limit]
-        return jsonify({'logs': logs}), 200
-    else:
-        return jsonify({
-            'login_logs': sorted(login_logs, key=lambda x: x['timestamp'], reverse=True)[:limit],
-            'security_events': sorted(security_events, key=lambda x: x['timestamp'], reverse=True)[:limit]
-        }), 200
-
-@app.route('/api/admin/security-stats', methods=['GET'])
-def get_security_stats():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    total_logins = len(login_logs)
-    failed_logins = len([log for log in login_logs if not log['success']])
-    successful_logins = len([log for log in login_logs if log['success']])
-    brute_force_events = len([event for event in security_events if event['type'] == 'brute_force_detected'])
-    sql_injection_events = len([event for event in security_events if 'threat' in event['type']])
-    critical_events = len([event for event in security_events if event['severity'] == 'critical'])
-    high_events = len([event for event in security_events if event['severity'] == 'high'])
-    
-    return jsonify({
-        'total_logins': total_logins,
-        'failed_logins': failed_logins,
-        'successful_logins': successful_logins,
-        'brute_force_attempts': brute_force_events,
-        'sql_injection_attempts': sql_injection_events,
-        'critical_events': critical_events,
-        'high_severity_events': high_events,
-        'blocked_users_count': len(blocked_users)
-    }), 200
-
-@app.route('/api/admin/cyberguard/analyze', methods=['POST'])
-def cyberguard_analyze():
-    user_email = get_user_from_token(request)
-    
-    if not user_email or user_email not in admin_users:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    data = request.json
-    text_to_analyze = data.get('text', '')
-    
-    if not text_to_analyze:
-        return jsonify({'error': 'No text provided'}), 400
-    
-    gemini_api_key = os.environ.get('GEMINI_API_KEY')
-    
-    if gemini_api_key:
-        try:
-            import requests
-            import re
-            
-            headers = {'Content-Type': 'application/json'}
-            
-            # CyberGuardAI System Prompt - Enhanced with more threat types
-            system_prompt = """You are CyberGuardAI, an advanced cybersecurity threat-detection assistant for a learning platform.
+        
+        system_prompt = """You are CyberGuardAI, an advanced cybersecurity threat-detection assistant for a learning platform.
 
 Your goal is to analyze security logs, user inputs, code snippets, and data to detect threats, classify them accurately, explain the reasoning, and provide recommended actions. This analysis will be used for students learning cybersecurity.
 
@@ -890,84 +539,479 @@ You MUST output a JSON response with the following format:
 
 Now analyze the input and produce your JSON result."""
 
-            payload = {
-                'contents': [{
-                    'parts': [{
-                        'text': f"""{system_prompt}
-
-### TEXT TO ANALYZE:
-{text_to_analyze}
-
-Respond ONLY with valid JSON. Do not include any markdown formatting or code blocks."""
-                    }]
-                }]
+        payload = {
+            'model': 'llama-3.3-70b-versatile',
+            'messages': [
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': f"### TEXT TO ANALYZE:\n{text_to_analyze}\n\nRespond ONLY with valid JSON. Do not include any markdown formatting or code blocks."}
+            ],
+            'temperature': 0.1,
+            'max_tokens': 1024
+        }
+        
+        key_prefix = groq_api_key[:8] if groq_api_key else "NONE"
+        print(f"Using Groq API key starting with: {key_prefix}...")
+        
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        print(f"Groq API response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            result = response.json()
+            ai_response = result['choices'][0]['message']['content']
+            
+            ai_response = re.sub(r'```json\s*', '', ai_response)
+            ai_response = re.sub(r'```\s*$', '', ai_response)
+            ai_response = ai_response.strip()
+            
+            ai_analysis = json_lib.loads(ai_response)
+            
+            threat_detected = ai_analysis.get('threat_level', 'none') != 'none'
+            
+            return {
+                'success': True,
+                'analysis': {
+                    'threat_detected': threat_detected,
+                    'threat_type': ai_analysis.get('threat_type', 'unknown'),
+                    'severity': ai_analysis.get('threat_level', 'low'),
+                    'patterns': ai_analysis.get('evidence', []),
+                    'recommendation': ai_analysis.get('recommended_action', 'Review manually'),
+                    'explanation': ai_analysis.get('description', 'Analysis completed'),
+                    'mitre_technique': ai_analysis.get('mitre_technique', None)
+                }
             }
-            
-            response = requests.post(
-                f'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}',
-                headers=headers,
-                json=payload,
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                ai_response = result['candidates'][0]['content']['parts'][0]['text']
-                
-                # Clean up the response - remove markdown code blocks if present
-                ai_response = re.sub(r'```json\s*', '', ai_response)
-                ai_response = re.sub(r'```\s*$', '', ai_response)
-                ai_response = ai_response.strip()
-                
-                try:
-                    import json as json_lib
-                    ai_analysis = json_lib.loads(ai_response)
-                    
-                    # Convert to our internal format
-                    threat_detected = ai_analysis.get('threat_level', 'none') != 'none'
-                    
-                    analysis = {
-                        'threat_detected': threat_detected,
-                        'threat_type': ai_analysis.get('threat_type', 'unknown'),
-                        'severity': ai_analysis.get('threat_level', 'low'),
-                        'patterns': ai_analysis.get('evidence', []),
-                        'recommendation': ai_analysis.get('recommended_action', 'Review manually'),
-                        'explanation': ai_analysis.get('description', 'Analysis completed'),
-                        'mitre_technique': ai_analysis.get('mitre_technique', None)
-                    }
-                    
-                except Exception as parse_error:
-                    print(f"JSON parse error: {parse_error}, Response: {ai_response}")
-                    analysis = {
-                        'threat_detected': False,
-                        'threat_type': 'Analysis Error',
-                        'severity': 'low',
-                        'patterns': [],
-                        'recommendation': 'Manual review recommended - AI response format error',
-                        'explanation': f'Could not parse AI response. Raw output: {ai_response[:200]}'
-                    }
-                
-                if analysis.get('threat_detected'):
-                    threat_detections.append({
-                        'timestamp': datetime.now().isoformat(),
-                        'text': text_to_analyze[:200],
-                        'analysis': analysis,
-                        'source': 'gemini_ai'
-                    })
-                
-                return jsonify({
-                    'analyzed': True,
-                    'source': 'gemini_ai',
-                    'analysis': analysis
-                }), 200
-                
-        except Exception as e:
-            print(f"Gemini API error: {e}")
-            import traceback
-            traceback.print_exc()
-            pass
+        else:
+            error_msg = f"Groq API returned status {response.status_code}"
+            try:
+                error_body = response.json()
+                if 'error' in error_body:
+                    error_msg = error_body['error'].get('message', error_msg)
+            except:
+                pass
+            print(f"Groq API error: {error_msg}")
+            return {'success': False, 'error': error_msg}
+    except Exception as e:
+        print(f"Groq API exception: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': str(e)}
+
+def generate_ai_alert_for_threat(analysis, text, source):
+    if not analysis.get('threat_detected'):
+        return
     
-    # Fallback to local detection - check all threat types
+    severity = analysis.get('severity', 'low')
+    threat_type = analysis.get('threat_type', 'Unknown')
+    
+    title_map = {
+        'critical': 'CRITICAL THREAT DETECTED',
+        'high': 'High Severity Threat Detected',
+        'medium': 'Medium Severity Threat Detected',
+        'low': 'Low Severity Alert'
+    }
+    
+    title = title_map.get(severity, 'Security Alert')
+    
+    message = f"{threat_type} attack detected. {analysis.get('explanation', 'Suspicious activity identified.')}"
+    
+    db.create_ai_alert(
+        alert_type=threat_type,
+        title=title,
+        message=message,
+        severity=severity,
+        threat_data={
+            'text': text[:200],
+            'patterns': analysis.get('patterns', []),
+            'recommendation': analysis.get('recommendation', ''),
+            'source': source
+        }
+    )
+
+@app.route('/')
+def serve_index():
+    return send_from_directory('public', 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    if os.path.exists(os.path.join('public', path)):
+        return send_from_directory('public', path)
+    return send_from_directory('public', 'index.html')
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    
+    ip_address = request.remote_addr
+    
+    threats = check_threat(data)
+    if threats:
+        db.log_security_event(
+            'signup_threat',
+            f'Threat detected in signup attempt from {ip_address}',
+            'high',
+            {'threats': threats, 'email': email}
+        )
+        
+        # Trigger AI analysis for all detected threats
+        analyze_threat_with_ai(data, source='signup_attempt')
+        
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    if not email or not password or not name:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    if db.get_user(email):
+        return jsonify({'error': 'Email already exists'}), 400
+    
+    if not db.create_user(email, password, name):
+        return jsonify({'error': 'Failed to create account'}), 500
+    
+    token = db.generate_token()
+    db.save_token(token, email)
+    
+    db.log_login_attempt(email, True, ip_address, request.headers.get('User-Agent', ''), 'New signup')
+    
+    return jsonify({
+        'message': 'Account created successfully',
+        'token': token,
+        'isAdmin': False,
+        'user': {
+            'email': email,
+            'name': name
+        }
+    }), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    ip_address = request.remote_addr
+    user_agent = request.headers.get('User-Agent', '')
+    
+    threats = check_threat(data)
+    if threats:
+        db.log_security_event(
+            'login_threat',
+            f'Threat detected in login attempt from {ip_address}',
+            'high',
+            {'threats': threats, 'email': email}
+        )
+        db.log_login_attempt(email, False, ip_address, user_agent, 'Threat detected')
+        
+        # Trigger AI analysis for all detected threats
+        analyze_threat_with_ai(data, source='login_attempt')
+        
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    if not email or not password:
+        db.log_login_attempt(email or 'unknown', False, ip_address, user_agent, 'Missing credentials')
+        return jsonify({'error': 'Missing email or password'}), 400
+    
+    if db.is_user_blocked(email):
+        db.log_login_attempt(email, False, ip_address, user_agent, 'User blocked')
+        db.log_security_event(
+            'blocked_user_attempt',
+            f'Blocked user {email} attempted login from {ip_address}',
+            'medium',
+            {'email': email, 'ip': ip_address}
+        )
+        return jsonify({'error': 'Account is blocked. Contact administrator.'}), 403
+    
+    is_brute_force, attempt_count = db.detect_brute_force(email, ip_address)
+    if is_brute_force:
+        db.log_security_event(
+            'brute_force_detected',
+            f'Brute force attempt detected for {email} from {ip_address}',
+            'critical',
+            {'email': email, 'ip': ip_address, 'attempts': attempt_count}
+        )
+        
+        groq_api_key = os.environ.get('GROQ_API_KEY')
+        if groq_api_key:
+            db.create_ai_alert(
+                alert_type='brute_force',
+                title='Brute Force Attack Detected',
+                message=f'Multiple failed login attempts ({attempt_count}) detected for {email} from IP {ip_address}. Possible credential stuffing or brute force attack.',
+                severity='critical',
+                threat_data={
+                    'email': email,
+                    'ip_address': ip_address,
+                    'attempt_count': attempt_count,
+                    'recommendation': 'Consider blocking this IP address and notifying the user.'
+                }
+            )
+    
+    if not db.verify_password(email, password):
+        db.log_login_attempt(email, False, ip_address, user_agent, 'Invalid credentials')
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    user = db.get_user(email)
+    token = db.generate_token()
+    db.save_token(token, email)
+    
+    db.log_login_attempt(email, True, ip_address, user_agent, 'Successful login')
+    
+    return jsonify({
+        'message': 'Login successful',
+        'token': token,
+        'isAdmin': user.get('is_admin', False),
+        'user': {
+            'email': user['email'],
+            'name': user['name']
+        }
+    }), 200
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+        db.remove_token(token)
+    return jsonify({'message': 'Logged out successfully'}), 200
+
+@app.route('/api/account', methods=['GET'])
+def get_account():
+    user_email = get_user_from_token(request)
+    
+    if not user_email:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user(user_email)
+    account = db.get_account(user_email)
+    
+    if not user or not account:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'user': {
+            'email': user['email'],
+            'name': user['name'],
+            'isAdmin': user.get('is_admin', False)
+        },
+        'account': account
+    }), 200
+
+@app.route('/api/check-auth', methods=['GET'])
+def check_auth():
+    user_email = get_user_from_token(request)
+    
+    if not user_email:
+        return jsonify({'authenticated': False}), 200
+    
+    user = db.get_user(user_email)
+    if not user:
+        return jsonify({'authenticated': False}), 200
+    
+    return jsonify({
+        'authenticated': True,
+        'user': {
+            'email': user['email'],
+            'name': user['name'],
+            'isAdmin': user.get('is_admin', False)
+        }
+    }), 200
+
+@app.route('/api/admin/users', methods=['GET'])
+def get_all_users():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    users = db.get_all_users()
+    return jsonify({'users': users}), 200
+
+@app.route('/api/admin/add-funds', methods=['POST'])
+def add_funds():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    target_email = data.get('email')
+    amount = data.get('amount')
+    
+    if not target_email or amount is None or amount == 0:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    if not db.get_user(target_email):
+        return jsonify({'error': 'User not found'}), 404
+    
+    account = db.get_account(target_email)
+    if not account:
+        return jsonify({'error': 'User account not found'}), 404
+    
+    if amount < 0 and account['balance'] + amount < 0:
+        return jsonify({'error': 'Insufficient balance to reduce by this amount'}), 400
+    
+    new_balance = db.add_funds(target_email, amount)
+    
+    action = 'added' if amount > 0 else 'reduced'
+    abs_amount = abs(amount)
+    
+    db.log_security_event(
+        'admin_adjust_funds',
+        f'Admin {action} ${abs_amount} {"to" if amount > 0 else "from"} {target_email}',
+        'low',
+        {'admin': user_email, 'target': target_email, 'amount': amount, 'action': action}
+    )
+    
+    return jsonify({
+        'message': f'Funds {action} successfully',
+        'new_balance': new_balance,
+        'amount': amount
+    }), 200
+
+@app.route('/api/admin/block-user', methods=['POST'])
+def block_user():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    target_email = data.get('email')
+    blocked = data.get('blocked', True)
+    
+    if not target_email:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    if not db.get_user(target_email):
+        return jsonify({'error': 'User not found'}), 404
+    
+    if db.is_user_admin(target_email):
+        return jsonify({'error': 'Cannot block admin users'}), 400
+    
+    db.block_user(target_email, blocked)
+    
+    message = f'User {target_email} has been {"blocked" if blocked else "unblocked"}'
+    
+    db.log_security_event(
+        'admin_block_user',
+        message,
+        'medium',
+        {'admin': user_email, 'target': target_email, 'blocked': blocked}
+    )
+    
+    return jsonify({'message': message}), 200
+
+@app.route('/api/admin/delete-user', methods=['DELETE'])
+def delete_user():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    target_email = data.get('email')
+    
+    if not target_email:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    if not db.get_user(target_email):
+        return jsonify({'error': 'User not found'}), 404
+    
+    if db.is_user_admin(target_email):
+        return jsonify({'error': 'Cannot delete admin users'}), 400
+    
+    db.delete_user(target_email)
+    
+    db.log_security_event(
+        'admin_delete_user',
+        f'Admin deleted user {target_email}',
+        'high',
+        {'admin': user_email, 'target': target_email}
+    )
+    
+    return jsonify({'message': f'User {target_email} has been deleted'}), 200
+
+@app.route('/api/admin/security-logs', methods=['GET'])
+def get_security_logs():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    log_type = request.args.get('type', 'all')
+    limit = int(request.args.get('limit', 100))
+    
+    if log_type == 'login':
+        logs = db.get_login_logs(limit)
+        return jsonify({'logs': logs}), 200
+    elif log_type == 'security':
+        logs = db.get_security_events(limit)
+        return jsonify({'logs': logs}), 200
+    else:
+        return jsonify({
+            'login_logs': db.get_login_logs(limit),
+            'security_events': db.get_security_events(limit)
+        }), 200
+
+@app.route('/api/admin/security-stats', methods=['GET'])
+def get_security_stats():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    return jsonify(db.get_security_stats()), 200
+
+@app.route('/api/admin/cyberguard/analyze', methods=['POST'])
+def cyberguard_analyze():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    text_to_analyze = data.get('text', '')
+    
+    if not text_to_analyze:
+        return jsonify({'error': 'No text provided'}), 400
+    
+    print(f"Analyzing text: {text_to_analyze[:100]}...")
+    
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    ai_analysis_attempted = False
+    ai_analysis_success = False
+    
+    if groq_api_key:
+        print("Groq API key found, attempting AI analysis...")
+        ai_analysis_attempted = True
+        result = analyze_with_groq(text_to_analyze, groq_api_key)
+        
+        if result.get('success'):
+            ai_analysis_success = True
+            analysis = result['analysis']
+            print(f"AI Analysis result: threat_detected={analysis.get('threat_detected')}, type={analysis.get('threat_type')}")
+            
+            if analysis.get('threat_detected'):
+                db.add_threat_detection(text_to_analyze, analysis, 'groq_ai')
+                generate_ai_alert_for_threat(analysis, text_to_analyze, 'manual_analysis')
+                print(f"AI Alert generated for threat: {analysis.get('threat_type')}")
+            
+            return jsonify({
+                'analyzed': True,
+                'source': 'groq_ai',
+                'analysis': analysis
+            }), 200
+        else:
+            print(f"Groq AI analysis failed: {result.get('error')}, falling back to local detection")
+    else:
+        print("No Groq API key, using local detection only")
+    
+    print("Running local threat detection...")
     detectors = [
         ('SQL Injection', detect_sql_injection, 'high'),
         ('XSS', detect_xss, 'high'),
@@ -996,7 +1040,7 @@ Respond ONLY with valid JSON. Do not include any markdown formatting or code blo
             all_patterns.extend(patterns)
     
     if detected_threats:
-        # Use the highest severity threat
+        print(f"Local detection found {len(detected_threats)} threat type(s)")
         primary_threat = max(detected_threats, key=lambda x: 
             {'critical': 4, 'high': 3, 'medium': 2, 'low': 1}.get(x['severity'], 0))
         
@@ -1004,11 +1048,18 @@ Respond ONLY with valid JSON. Do not include any markdown formatting or code blo
             'threat_detected': True,
             'threat_type': primary_threat['type'],
             'severity': primary_threat['severity'],
-            'patterns': all_patterns[:10],  # Limit patterns for display
+            'patterns': all_patterns[:10],
             'recommendation': f"Block and investigate - {len(detected_threats)} threat type(s) detected",
-            'explanation': f"Multiple security threats detected: {', '.join([t['type'] for t in detected_threats])}"
+            'explanation': f"Security threats detected: {', '.join([t['type'] for t in detected_threats])}"
         }
+        
+        print(f"Saving threat detection to database...")
+        db.add_threat_detection(text_to_analyze, analysis, 'local_detection')
+        print(f"Generating alert for: {primary_threat['type']}")
+        generate_ai_alert_for_threat(analysis, text_to_analyze, 'manual_analysis')
+        print(f"Alert generated successfully")
     else:
+        print("No threats detected by local analysis")
         analysis = {
             'threat_detected': False,
             'threat_type': 'None',
@@ -1017,14 +1068,6 @@ Respond ONLY with valid JSON. Do not include any markdown formatting or code blo
             'recommendation': 'Safe to proceed',
             'explanation': 'No threats detected by local analysis'
         }
-    
-    if detected_threats:
-        threat_detections.append({
-            'timestamp': datetime.now().isoformat(),
-            'text': text_to_analyze[:200],
-            'analysis': analysis,
-            'source': 'local_detection'
-        })
     
     return jsonify({
         'analyzed': True,
@@ -1036,12 +1079,12 @@ Respond ONLY with valid JSON. Do not include any markdown formatting or code blo
 def get_threat_detections():
     user_email = get_user_from_token(request)
     
-    if not user_email or user_email not in admin_users:
+    if not user_email or not db.is_user_admin(user_email):
         return jsonify({'error': 'Unauthorized'}), 403
     
     limit = int(request.args.get('limit', 50))
     
-    threats = sorted(threat_detections, key=lambda x: x['timestamp'], reverse=True)[:limit]
+    threats = db.get_threat_detections(limit)
     
     return jsonify({'threats': threats}), 200
 
@@ -1049,19 +1092,211 @@ def get_threat_detections():
 def get_cyberguard_status():
     user_email = get_user_from_token(request)
     
-    if not user_email or user_email not in admin_users:
+    if not user_email or not db.is_user_admin(user_email):
         return jsonify({'error': 'Unauthorized'}), 403
     
-    gemini_api_key = os.environ.get('GEMINI_API_KEY')
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    stats = db.get_security_stats()
     
     status = {
-        'gemini_enabled': bool(gemini_api_key),
+        'ai_enabled': bool(groq_api_key),
         'local_detection_enabled': True,
-        'total_threats_detected': len(threat_detections),
+        'total_threats_detected': stats['total_threats_detected'],
         'protection_active': True
     }
     
     return jsonify(status), 200
+
+@app.route('/api/admin/alerts', methods=['GET'])
+def get_alerts():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    limit = int(request.args.get('limit', 50))
+    unread_only = request.args.get('unread_only', 'false').lower() == 'true'
+    
+    alerts = db.get_ai_alerts(limit, unread_only)
+    unread_count = db.get_unread_alert_count()
+    
+    return jsonify({
+        'alerts': alerts,
+        'unread_count': unread_count
+    }), 200
+
+@app.route('/api/admin/alerts/<int:alert_id>/read', methods=['POST'])
+def mark_alert_as_read(alert_id):
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.mark_alert_read(alert_id)
+    
+    return jsonify({'message': 'Alert marked as read'}), 200
+
+@app.route('/api/admin/alerts/<int:alert_id>/dismiss', methods=['POST'])
+def dismiss_alert(alert_id):
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.dismiss_alert(alert_id)
+    
+    return jsonify({'message': 'Alert dismissed'}), 200
+
+@app.route('/api/admin/alerts/count', methods=['GET'])
+def get_alert_count():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    count = db.get_unread_alert_count()
+    
+    return jsonify({'unread_count': count}), 200
+
+@app.route('/api/admin/alerts/<int:alert_id>/analyze', methods=['POST'])
+def analyze_alert_with_ai(alert_id):
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    
+    if not groq_api_key:
+        return jsonify({'error': 'AI is not configured. Please add GROQ_API_KEY.'}), 400
+    
+    alert = db.get_alert_by_id(alert_id)
+    
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+    
+    text_to_analyze = ""
+    if alert.get('threat_data'):
+        threat_data = alert['threat_data']
+        if isinstance(threat_data, dict):
+            text_to_analyze = threat_data.get('text', '')
+            if threat_data.get('patterns'):
+                text_to_analyze += f"\nPatterns: {', '.join(str(p) for p in threat_data.get('patterns', []))}"
+        else:
+            text_to_analyze = str(threat_data)
+    
+    if not text_to_analyze:
+        text_to_analyze = f"{alert.get('title', '')} - {alert.get('message', '')}"
+    
+    result = analyze_with_groq(text_to_analyze, groq_api_key)
+    
+    if result.get('success'):
+        analysis = result['analysis']
+        db.update_alert_analysis(alert_id, analysis)
+        
+        return jsonify({
+            'success': True,
+            'alert_id': alert_id,
+            'analysis': analysis
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': result.get('error', 'Analysis failed')
+        }), 500
+
+@app.route('/api/admin/database/stats', methods=['GET'])
+def get_database_stats_route():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    stats = db.get_database_stats()
+    
+    return jsonify(stats), 200
+
+@app.route('/api/admin/database/table/<table_name>', methods=['GET'])
+def get_table_data_route(table_name):
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    allowed_tables = ['login_logs', 'security_events', 'threat_detections', 'ai_alerts']
+    
+    if table_name not in allowed_tables:
+        return jsonify({'error': 'Invalid table name'}), 400
+    
+    limit = int(request.args.get('limit', 100))
+    offset = int(request.args.get('offset', 0))
+    
+    data = db.get_table_data(table_name, limit, offset)
+    
+    return jsonify({
+        'table': table_name,
+        'data': data,
+        'limit': limit,
+        'offset': offset
+    }), 200
+
+@app.route('/api/admin/database/clear/<table_name>', methods=['DELETE'])
+def clear_table_data_route(table_name):
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    clearable_tables = ['login_logs', 'security_events', 'threat_detections', 'ai_alerts']
+    
+    if table_name not in clearable_tables:
+        return jsonify({'error': 'Cannot clear this table. Only log and alert tables can be cleared.'}), 400
+    
+    success, message = db.clear_table_data(table_name)
+    
+    if success:
+        db.log_security_event(
+            'admin_clear_table',
+            f'Admin {user_email} cleared table {table_name}',
+            'medium',
+            {'table': table_name, 'admin': user_email}
+        )
+        return jsonify({'success': True, 'message': message}), 200
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+@app.route('/api/admin/database/clear-old', methods=['DELETE', 'POST'])
+def clear_old_logs_route():
+    user_email = get_user_from_token(request)
+    
+    if not user_email or not db.is_user_admin(user_email):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json or {}
+    days = int(data.get('days', 30))
+    print(f"Clearing logs older than {days} days")
+    
+    if days < 1:
+        return jsonify({'error': 'Days must be at least 1'}), 400
+    
+    cleared = db.clear_old_logs(days)
+    
+    total_cleared = sum(cleared.values())
+    
+    if total_cleared > 0:
+        db.log_security_event(
+            'admin_clear_old_logs',
+            f'Admin {user_email} cleared logs older than {days} days',
+            'low',
+            {'days': days, 'cleared': cleared, 'admin': user_email}
+        )
+    
+    return jsonify({
+        'success': True,
+        'days': days,
+        'cleared': cleared,
+        'total_cleared': total_cleared
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
